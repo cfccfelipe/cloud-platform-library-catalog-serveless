@@ -1,6 +1,6 @@
 # =========================================================================
 # GITLAB CI/CD PIPELINE: Serverless Library Catalog
-# Optimized version resolving PATH and dependency persistence errors.
+# ALTERNATIVA FINAL: Instalación de Poetry en cada job de Build.
 # =========================================================================
 
 image: python:3.11-slim
@@ -23,70 +23,51 @@ stages:
 # 1. SETUP STAGE (Installation of essential tools)
 # -------------------------------------------------------------------------
 
-# CRITICAL: Define the global cache path for pip binaries
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
-
-# Template job for installing all dependencies and tools
 .setup_dependencies:
   stage: setup
   script:
-    # 0. Set environment variables
-    - mkdir -p $PIP_CACHE_DIR
-    - export PIP_CACHE_DIR
+    - python -m pip install --upgrade pip
 
-    # 1. Install system tools (make, wget, unzip)
+    # 1. Instala make y herramientas del sistema
     - apt-get update && apt-get install -y make wget unzip
 
-    # 2. Install Poetry globally (standard system path)
-    - pip install poetry
-
-    # 3. Configure Poetry to create .venv locally (essential for caching/artifacts)
-    # The 'poetry' command is now available due to the installation in the script path.
+    # 2. Instala solo las dependencias del proyecto, forzando la creación local de .venv
+    - pip install poetry # Poetry es necesario para el 'poetry install'
     - poetry config virtualenvs.in-project true
     - poetry install
 
-    # 4. Install Terraform and move it to a cacheable location
+    # 3. Instala Terraform y lo mueve a una ubicación conocida
     - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
     - unzip terraform_1.5.7_linux_amd64.zip
     - mv terraform /usr/local/bin/
 
-# Job that executes the installation and defines artifacts/cache
+# Job que ejecuta la instalación y define artifacts/cache
 setup:
   stage: setup
   extends:
     - .setup_dependencies
 
-  # Ensure the necessary bin directory is available in this shell execution
-  before_script:
-    # Adding system binaries path is often sufficient after global install
-    - export PATH="$PATH:/usr/local/bin"
-
   artifacts:
-    # Pass the local .venv (created by poetry)
+    # Pasa el .venv (creado localmente) y el binario de Terraform
     paths:
       - .venv/
       - /usr/local/bin/terraform
     expire_in: 1 day
 
-  # Use cache to persist the installation of poetry/pip packages across jobs
+  # Usa cache para guardar el .venv (más rápido que artifacts, recomendado)
   cache:
     key: poetry-dependencies
     paths:
       - .venv/
-      - $PIP_CACHE_DIR
-      - /usr/local/bin/terraform
-    policy: push
 
 # -------------------------------------------------------------------------
 # 2. BUILD STAGE (Code Validation and Packaging)
 # -------------------------------------------------------------------------
 
-# Base job to inherit necessary setup properties
+# Base job para heredar la configuración de cache y entorno
 .inherit_setup:
   stage: build
-  # No export PATH needed because 'poetry' is installed globally in the image path.
-  # The cache restores the large .venv and the binary dependencies.
+  # El cache debe restaurar el .venv.
   cache:
     key: poetry-dependencies
     policy: pull
@@ -97,8 +78,13 @@ lint_and_test:
   extends:
     - .inherit_setup
   script:
+    # --- FIX CRÍTICO: Reinstala Poetry globalmente en este contenedor ---
+    # Esto garantiza que 'poetry' sea accesible en el PATH.
+    - pip install poetry
+
     - echo "Running quality checks (Ruff, Mypy, Pytest)..."
-    # 'poetry run' will now reliably find the poetry executable installed globally
+    # 'poetry run' ahora funciona porque 'poetry' está instalado,
+    # y usa el .venv restaurado por el cache/artifacts.
     - poetry run make check
   except:
     - main
@@ -107,6 +93,9 @@ package_lambda:
   extends:
     - .inherit_setup
   script:
+    # --- FIX CRÍTICO: Reinstala Poetry globalmente ---
+    - pip install poetry
+
     - echo "Packaging Lambda code and dependencies..."
     - poetry run make zip
 
