@@ -55,6 +55,22 @@ setup:
 # 2. BUILD STAGE (Code Validation and Packaging)
 # -------------------------------------------------------------------------
 
+build .setup_dependencies:
+  # ... (other configuration lines)
+  script:
+    - python -m pip install --upgrade pip
+    # Install Poetry into a predictable location
+    - pip install --user poetry
+
+    # ... (rest of the script)
+
+  # Add cache definition here to save global tools installed via pip --user
+  cache:
+    key: poetry-cache
+    paths:
+      # This is the standard location where pip --user installs executables
+      - $HOME/.local/bin/
+
 lint_and_test:
   stage: build
   script:
