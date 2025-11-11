@@ -73,6 +73,9 @@ build .setup_dependencies:
 
 lint_and_test:
   stage: build
+  cache:
+    key: poetry-cache
+    policy: null
   script:
     - export PATH="$PATH:$(python -m site --user-base)/bin"
     - echo "Running quality checks (Ruff, Mypy, Pytest)..."
