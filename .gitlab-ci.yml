@@ -1,6 +1,5 @@
 # =========================================================================
 # GITLAB CI/CD PIPELINE: Serverless Library Catalog
-# Manages code quality, Terraform infrastructure, and Lambda deployment.
 # =========================================================================
 
 image: python:3.11-slim
@@ -16,8 +15,8 @@ variables:
 stages:
   - setup
   - build
-  # - infra
-  # - deploy
+  - infra
+  - deploy
 
 # -------------------------------------------------------------------------
 # 1. SETUP STAGE (Installation of essential tools)
@@ -25,6 +24,8 @@ stages:
 
 # Template job for installing all dependencies and tools
 .setup_dependencies:
+  # CRITICAL FIX: Ensure template uses a defined stage
+  stage: setup
   script:
     - python -m pip install --upgrade pip
 
@@ -34,7 +35,7 @@ stages:
     # 2. Install Poetry globally via pip --user
     - pip install --user poetry
 
-    # 3. Configure Poetry to create .venv locally (essential for caching)
+    # 3. Configure Poetry to create .venv locally (essential for caching/artifacts)
     - export PATH="$PATH:$HOME/.local/bin" # Add poetry to PATH for immediate use
     - poetry config virtualenvs.in-project true
     - poetry install
@@ -48,14 +49,13 @@ stages:
 setup:
   stage: setup
   extends:
-    - .setup_dependencies # Correct YAML list syntax
+    - .setup_dependencies # CORRECT: Uses list syntax
 
   # Ensure the necessary bin directory is available in this shell execution
   before_script:
     - export PATH="$PATH:$HOME/.local/bin"
 
   artifacts:
-    # Pass the .venv (created locally) and the Terraform binary (in .local/bin)
     paths:
       - .venv/
       - $HOME/.local/bin/terraform
@@ -99,7 +99,7 @@ package_lambda:
     - .inherit_setup
   script:
     - echo "Packaging Lambda code and dependencies..."
-    # Execute the make target which handles packaging logic (exports requirements and zips)
+    # Execute the make target which handles packaging logic (poetry run is handled in the Makefile or needs to be added here if 'make' doesn't use it)
     - poetry run make zip
 
   artifacts:
