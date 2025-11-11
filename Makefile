@@ -87,7 +87,6 @@ deploy: zip infra-apply
 # 4. TESTING & QUALITY CHECKS (CI/CD SIMULATION)
 # =========================================================================
 
-# Nuevo Target: Simula el job de linting y pruebas en el pipeline de CI/CD
 ci-test: setup
 	@echo "--- ⚙️ SIMULATING GITLAB CI BUILD STAGE (LINT/TEST) ---"
 	# 1. Linter
