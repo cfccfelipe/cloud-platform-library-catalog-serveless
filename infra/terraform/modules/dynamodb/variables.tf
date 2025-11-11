@@ -6,13 +6,17 @@ variable "table_name" {
 variable "billing_mode" {
   description = "Billing mode for DynamoDB (PAY_PER_REQUEST or PROVISIONED)"
   type        = string
-  default     = "PAY_PER_REQUEST"
+  default     = "PAY_PER_REQUEST" # On-Demand Capacity Mode
 }
 
 variable "hash_key" {
-  description = "Primary hash key name"
-  type        = string
-  default     = "LockID"
+  description = <<EOT
+Primary hash key name.
+Default "LockID" is for the Terraform state lock table.
+Override with "id" for the catalog table.
+EOT
+  type    = string
+  default = "LockID"
 }
 
 variable "hash_key_type" {
@@ -25,4 +29,14 @@ variable "environment" {
   description = "Environment tag"
   type        = string
   default     = "dev"
+}
+
+variable "ttl_attribute_name" {
+  description = <<EOT
+Attribute used for TTL expiration.
+Leave empty to disable.
+Use "expire_at" for catalog table to enable TTL.
+EOT
+  type    = string
+  default = ""
 }

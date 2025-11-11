@@ -14,7 +14,7 @@ SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
 APP_ZIP_NAME = deployment_package.zip
-TERRAFORM_PLAN_FILE = tfplan.txt
+TERRAFORM_PLAN_FILE = tfplan.out
 
 .PHONY: all setup infra deploy clean test zip check ci-test infra-init infra-plan infra-apply infra-destroy
 
@@ -46,11 +46,6 @@ infra-init:
 infra-validate: infra-init
 	@echo "--- ✅ Validating Terraform configuration ---"
 	cd $(TERRAFORM_DIR) && terraform validate
-
-infra-dry-run:
-	@echo "--- 📝 Dry-run Terraform plan (no AWS, no variables) ---"
-	cd $(TERRAFORM_DIR) && terraform init -backend=false
-	cd $(TERRAFORM_DIR) && terraform plan -input=false -refresh=false -out=$(TERRAFORM_PLAN_FILE)
 
 infra-plan: infra-validate
 	@echo "--- 📝 Generating Terraform plan ---"

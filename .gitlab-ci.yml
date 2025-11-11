@@ -1,8 +1,6 @@
 image: python:3.11-slim
 
 variables:
-  TF_ROOT: infra/terraform
-  TF_PLAN: tfplan.out
   APP_ZIP_NAME: deployment_package.zip
   AWS_DEFAULT_REGION: $AWS_REGION
 
@@ -74,25 +72,31 @@ package_lambda:
   only:
     - main
 
-# # ------------------------------------------------------
-# # 3. INFRA STAGE (Terraform Provisioning/Update)
-# # -------------------------------------------------------------------------
+# ------------------------------------------------------
+# 3. INFRA STAGE (Terraform Provisioning/Update)
+# -------------------------------------------------------------------------
 
-# terraform_plan:
-#   stage: infra
-#   script:
-#     - echo "Validating and planning infrastructure changes..."
-#     # AWS environment variables must be configured in GitLab CI/CD settings
-#     - cd ${TF_ROOT}
-#     - /usr/local/bin/terraform init
-#     - /usr/local/bin/terraform validate
-#     # Generate the execution plan and save it as an artifact
-#     - /usr/local/bin/terraform plan -out ${TF_PLAN}
-#   artifacts:
-#     paths:
-#       - ${TF_ROOT}/${TF_PLAN}
-#   only:
-#     - main
+.inherit_infra:
+  stage: infra
+  cache:
+    key: poetry-dependencies
+    policy: pull
+  dependencies:
+    - setup
+
+terraform_plan:
+  extends: .inherit_infra
+  script:
+    - echo "Validating and planning infrastructure changes..."
+    # AWS environment variables must be configured in GitLab CI/CD settings
+    - make infra-init
+    - make infra-validate
+    - make infra-plan
+  artifacts:
+    paths:
+      - $APP_ZIP_NAME
+  only:
+    - main
 
 # terraform_apply:
 #   stage: infra

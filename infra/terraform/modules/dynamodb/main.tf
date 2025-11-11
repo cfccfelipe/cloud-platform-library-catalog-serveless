@@ -8,6 +8,15 @@ resource "aws_dynamodb_table" "this" {
     type = var.hash_key_type
   }
 
+  # TTL only enabled if ttl_attribute_name is provided
+  dynamic "ttl" {
+    for_each = var.ttl_attribute_name != "" ? [1] : []
+    content {
+      attribute_name = var.ttl_attribute_name
+      enabled        = true
+    }
+  }
+
   tags = {
     Name        = var.table_name
     Environment = var.environment
