@@ -8,13 +8,13 @@
 # --- CONFIGURATION VARIABLES ---
 # Reemplace estos valores según su entorno (desarrollo, producción)
 AWS_REGION = us-east-1
-TERRAFORM_DIR = infra/terraform
+TERRAFORM_DIR = infra/terraform/environments/qa
 LAMBDA_SRC_DIR = src/lambdas
 SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
 APP_ZIP_NAME = deployment_package.zip
-TERRAFORM_PLAN_FILE = tfplan.out
+TERRAFORM_PLAN_FILE = tfplan.txt
 
 .PHONY: all setup infra deploy clean test zip check ci-test infra-init infra-plan infra-apply infra-destroy
 
@@ -43,9 +43,18 @@ infra-init:
 	@echo "--- 🌍 Initializing Terraform in $(TERRAFORM_DIR) ---"
 	cd $(TERRAFORM_DIR) && terraform init
 
-infra-plan: infra-init
+infra-validate: infra-init
+	@echo "--- ✅ Validating Terraform configuration ---"
+	cd $(TERRAFORM_DIR) && terraform validate
+
+infra-dry-run:
+	@echo "--- 📝 Dry-run Terraform plan (no AWS, no variables) ---"
+	cd $(TERRAFORM_DIR) && terraform init -backend=false
+	cd $(TERRAFORM_DIR) && terraform plan -input=false -refresh=false -out=$(TERRAFORM_PLAN_FILE)
+
+infra-plan: infra-validate
 	@echo "--- 📝 Generating Terraform plan ---"
-	cd $(TERRAFORM_DIR) && terraform plan -out=$(TERRAFORM_PLAN_FILE)
+	cd $(TERRAFORM_DIR) && terraform plan -var-file=terraform.tfvars -out=$(TERRAFORM_PLAN_FILE)
 
 infra-apply: infra-plan
 	@echo "--- 🚀 Applying Infrastructure changes to AWS ---"
@@ -55,11 +64,10 @@ infra-destroy:
 	@echo "--- ⚠️ Destroying ALL provisioned AWS resources ---"
 	@read -p "Are you sure you want to destroy infrastructure? (yes/no): " confirmation; \
 	if [ "$$confirmation" = "yes" ]; then \
-		cd $(TERRAFORM_DIR) && terraform destroy; \
-	else \
-		echo "Destruction cancelled."; \
+	    cd $(TERRAFORM_DIR) && terraform destroy -var-file=terraform.tfvars; \
+    else \
+	    echo "Destruction cancelled."; \
 	fi
-
 
 # =========================================================================
 # 3. APPLICATION & DEPLOYMENT
