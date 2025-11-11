@@ -60,7 +60,9 @@ lint_and_test:
   script:
     - echo "Running quality checks (Ruff, Mypy, Pytest)..."
     # Execute quality checks using Poetry environment
-    - make check
+    - poetry run ruff check .
+    - poetry run mypy .
+    - poetry run pytest src/tests/
   except:
     - main # Run on feature branches
 
@@ -68,10 +70,9 @@ package_lambda:
   stage: build
   script:
     - echo "Packaging Lambda code and dependencies..."
-    # Call the 'zip' target from the Makefile to create the deployment package
-    - poetry run ruff check .
-    - poetry run mypy .
-    - poetry run pytest src/tests/
+    - poetry export --without dev -f requirements.txt --output ./scripts/requirements.txt
+    - chmod +x ./scripts/package_lambda.sh
+    - rm -f ./scripts/requirements.txt
   artifacts:
     # Pass the ZIP file to the deploy stage
     paths:
