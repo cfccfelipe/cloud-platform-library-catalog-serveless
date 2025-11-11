@@ -62,3 +62,20 @@ output "qa_sqs_dlq_arn" {
   description = "Dead Letter Queue ARN"
   value       = module.sqs.dlq_arn
 }
+
+# Producer Lambda
+output "producer_lambda_name" {
+  description = "Name of the producer Lambda function"
+  value       = module.producer_lambda.lambda_function_name
+}
+
+output "producer_lambda_role_arn" {
+  description = "ARN of the IAM role for the producer Lambda"
+  value       = module.producer_lambda_iam.lambda_role_arn
+}
+
+output "producer_lambda_sqs_policy_arn" {
+  description = "ARN of the SQS send policy attached to the producer Lambda"
+  value       = module.producer_lambda_iam.sqs_producer_policy_arn
+}
+

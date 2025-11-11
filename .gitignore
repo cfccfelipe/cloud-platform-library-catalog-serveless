@@ -57,3 +57,4 @@ deployment_package.zip
 
 # Local logs
 *.log
+poetry.lock

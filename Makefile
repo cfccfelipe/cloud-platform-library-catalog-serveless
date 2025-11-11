@@ -13,7 +13,7 @@ LAMBDA_SRC_DIR = src/lambdas
 SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
-APP_ZIP_NAME = deployment_package.zip
+APP_ZIP_NAME = build/app_deployment.zip
 TERRAFORM_PLAN_FILE = tfplan.out
 
 .PHONY: all setup infra deploy clean test zip check ci-test infra-init infra-plan infra-apply infra-destroy
@@ -55,6 +55,9 @@ infra-apply: infra-plan
 	@echo "--- 🚀 Applying Infrastructure changes to AWS ---"
 	cd $(TERRAFORM_DIR) && terraform apply $(TERRAFORM_PLAN_FILE)
 
+apply: zip infra-apply
+	@echo "--- ✅ Infrastructure applied with packaged Lambda ZIP ---"
+
 infra-destroy:
 	@echo "--- ⚠️ Destroying ALL provisioned AWS resources ---"
 	@read -p "Are you sure you want to destroy infrastructure? (yes/no): " confirmation; \
@@ -71,12 +74,14 @@ infra-destroy:
 zip:
 	@echo "--- 📦 Packaging Lambda source code and dependencies ---"
 	poetry export --without dev -f requirements.txt --output $(SCRIPTS_DIR)/requirements.txt
-	chmod +x ./scripts/package_lambda.sh
+	chmod +x ./$(SCRIPTS_DIR)/package_lambda.sh
+	@echo "Ensuring build directory exists..."
+	mkdir -p infra/terraform/build
 	@echo "Running packaging script to include dependencies in the ZIP..."
-	./$(SCRIPTS_DIR)/package_lambda.sh $(LAMBDA_SRC_DIR) $(APP_ZIP_NAME) $(SCRIPTS_DIR)/requirements.txt
-
+	./$(SCRIPTS_DIR)/package_lambda.sh $(LAMBDA_SRC_DIR) infra/terraform/build/producer_lambda.zip $(SCRIPTS_DIR)/requirements.txt
 	rm -f $(SCRIPTS_DIR)/requirements.txt
-	@echo "Packaging complete and temporary files cleaned up."
+	@echo "Packaging complete: infra/terraform/build/producer_lambda.zip created and temporary files cleaned up."
+
 
 deploy: zip infra-apply
 	@echo "--- ⬆️ Deploying application code to existing Lambdas ---"
