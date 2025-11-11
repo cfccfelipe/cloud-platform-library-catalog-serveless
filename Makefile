@@ -69,9 +69,8 @@ infra-destroy:
 zip:
 	@echo "--- 📦 Packaging Lambda source code and dependencies ---"
 	poetry export --without dev -f requirements.txt --output $(SCRIPTS_DIR)/requirements.txt
-
+	chmod +x ./scripts/package_lambda.sh
 	@echo "Running packaging script to include dependencies in the ZIP..."
-	# Placeholder para el script de empaquetado real
 	./$(SCRIPTS_DIR)/package_lambda.sh $(LAMBDA_SRC_DIR) $(APP_ZIP_NAME) $(SCRIPTS_DIR)/requirements.txt
 
 	rm -f $(SCRIPTS_DIR)/requirements.txt
