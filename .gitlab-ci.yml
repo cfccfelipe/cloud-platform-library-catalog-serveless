@@ -1,0 +1,122 @@
+image: python:3.11-slim
+
+variables:
+  TF_ROOT: infra/terraform
+  TF_PLAN: tfplan.out
+  APP_ZIP_NAME: deployment_package.zip
+  AWS_DEFAULT_REGION: $AWS_REGION
+
+stages:
+  - setup
+  - build
+  - infra
+  - deploy
+
+# -------------------------------------------------------------------------
+# 1. SETUP STAGE
+# -------------------------------------------------------------------------
+.setup_dependencies:
+  stage: setup
+  script:
+    - python -m pip install --upgrade pip
+    - apt-get update && apt-get install -y make wget unzip
+    - pip install poetry
+    - poetry config virtualenvs.in-project true
+    - poetry install
+    - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+    - unzip terraform_1.5.7_linux_amd64.zip
+    - mv terraform /usr/local/bin/
+
+setup:
+  stage: setup
+  extends: .setup_dependencies
+  artifacts:
+    paths:
+      - .venv/
+      - /usr/local/bin/terraform
+    expire_in: 1 day
+  cache:
+    key: poetry-dependencies
+    paths:
+      - .venv/
+
+# -------------------------------------------------------------------------
+# 2. BUILD STAGE
+# -------------------------------------------------------------------------
+.inherit_setup:
+  stage: build
+  cache:
+    key: poetry-dependencies
+    policy: pull
+  dependencies:
+    - setup
+
+lint_and_test:
+  extends: .inherit_setup
+  script:
+    - apt-get update && apt-get install -y make
+    - pip install poetry
+    - echo "Running quality checks (Ruff, Mypy, Pytest)..."
+    - poetry run make check
+  except:
+    - main
+
+package_lambda:
+  extends: .inherit_setup
+  script:
+    - apt-get update && apt-get install -y make
+    - pip install poetry
+    - echo "Packaging Lambda code and dependencies..."
+    - poetry run make zip
+  artifacts:
+    paths:
+      - $APP_ZIP_NAME
+  only:
+    - main
+
+# # ------------------------------------------------------
+# # 3. INFRA STAGE (Terraform Provisioning/Update)
+# # -------------------------------------------------------------------------
+
+# terraform_plan:
+#   stage: infra
+#   script:
+#     - echo "Validating and planning infrastructure changes..."
+#     # AWS environment variables must be configured in GitLab CI/CD settings
+#     - cd ${TF_ROOT}
+#     - /usr/local/bin/terraform init
+#     - /usr/local/bin/terraform validate
+#     # Generate the execution plan and save it as an artifact
+#     - /usr/local/bin/terraform plan -out ${TF_PLAN}
+#   artifacts:
+#     paths:
+#       - ${TF_ROOT}/${TF_PLAN}
+#   only:
+#     - main
+
+# terraform_apply:
+#   stage: infra
+#   script:
+#     - echo "Applying planned infrastructure changes to AWS..."
+#     - cd ${TF_ROOT}
+#     - /usr/local/bin/terraform apply ${TF_PLAN}
+#   dependencies:
+#     - terraform_plan
+#   when: manual # Requires manual approval before applying changes (best practice)
+#   only:
+#     - main
+
+# # -------------------------------------------------------------------------
+# # 4. DEPLOY STAGE (Lambda Code Update)
+# # -------------------------------------------------------------------------
+
+# deploy_application_code:
+#   stage: deploy
+#   script:
+#     - echo "Deploying Lambda application code..."
+#     # Execute the 'deploy' target from the Makefile, which uses AWS CLI to update functions.
+#     - make deploy
+#   dependencies:
+#     - package_lambda
+#   only:
+#     - main
