@@ -1,0 +1,3 @@
+aws_region        = "us-east-1"
+state_bucket_name = "company-qa-terraform-state"
+lock_table_name   = "company-qa-terraform-locks"
