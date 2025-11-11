@@ -36,6 +36,10 @@ stages:
     - pip install poetry
     # Install project dependencies
     - poetry install
+
+    # --- INSTALL MAKE COMMAND HERE ---
+    - apt-get update && apt-get install -y make wget unzip
+
     # Install Terraform CLI (required for infra stage)
     - apt-get update && apt-get install -y wget unzip
     - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
