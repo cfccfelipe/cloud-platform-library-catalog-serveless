@@ -10,7 +10,7 @@
 AWS_REGION = us-east-1
 TERRAFORM_DIR = infra/terraform
 LAMBDA_SRC_DIR = src/lambdas
-SRC_DIR = src/
+SRC_DIR = src
 SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
