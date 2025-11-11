@@ -95,7 +95,7 @@ ci-test: setup
 	poetry run ruff check .
 	# 2. Type
 	poetry run mypy .
-	# 3. Pruebas unitarias/integración
+	# 3. Test unitarias/integración
 	$(MAKE) test
 	@echo "--- ✅ CI Build Stage Simulation Complete ---"
 
