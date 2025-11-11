@@ -58,6 +58,7 @@ setup:
 lint_and_test:
   stage: build
   script:
+    - export PATH="$PATH:$(python -m site --user-base)/bin"
     - echo "Running quality checks (Ruff, Mypy, Pytest)..."
     # Execute quality checks using Poetry environment
     - poetry run ruff check .
