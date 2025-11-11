@@ -10,7 +10,6 @@
 AWS_REGION = us-east-1
 TERRAFORM_DIR = infra/terraform
 LAMBDA_SRC_DIR = src/lambdas
-SRC_DIR = src
 SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
@@ -106,7 +105,7 @@ check:
 
 test:
 	@echo "--- 🧪 Running tests ---"
-	poetry run pytest $(SRC_DIR)/tests/
+	poetry run pytest src/tests/
 
 clean:
 	@echo "--- 🗑️ Cleaning local environment files ---"
