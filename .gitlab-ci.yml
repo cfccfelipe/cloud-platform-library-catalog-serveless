@@ -1,28 +1,28 @@
-# # =========================================================================
-# # GITLAB CI/CD PIPELINE: Serverless Library Catalog
-# # Manages code quality, Terraform infrastructure, and Lambda deployment.
-# # =========================================================================
+# =========================================================================
+# GITLAB CI/CD PIPELINE: Serverless Library Catalog
+# Manages code quality, Terraform infrastructure, and Lambda deployment.
+# =========================================================================
 
-# # Use a common Python image with necessary system tools
-# image: python:3.11-slim
+# Use a common Python image with necessary system tools
+image: python:3.11-slim
 
-# # Define global variables for configuration
-# variables:
-#   # Directory where Terraform configuration resides
-#   TF_ROOT: infra/terraform
-#   # Terraform plan output file
-#   TF_PLAN: tfplan.out
-#   # Name of the zipped application file (from Makefile)
-#   APP_ZIP_NAME: deployment_package.zip
-#   # AWS region (Set as GitLab CI/CD Variable for security)
-#   AWS_DEFAULT_REGION: $AWS_REGION
+# Define global variables for configuration
+variables:
+  # Directory where Terraform configuration resides
+  TF_ROOT: infra/terraform
+  # Terraform plan output file
+  TF_PLAN: tfplan.out
+  # Name of the zipped application file (from Makefile)
+  APP_ZIP_NAME: deployment_package.zip
+  # AWS region (Set as GitLab CI/CD Variable for security)
+  AWS_DEFAULT_REGION: $AWS_REGION
 
-# # Define the pipeline stages
-# stages:
-#   - setup
-#   - build
-#   - infra
-#   - deploy
+# Define the pipeline stages
+stages:
+  - setup
+  - build
+  # - infra
+  # - deploy
 
 # -------------------------------------------------------------------------
 # 1. SETUP STAGE (Installation of essential tools)
