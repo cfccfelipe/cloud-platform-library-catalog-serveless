@@ -1,5 +1,6 @@
 # =========================================================================
 # GITLAB CI/CD PIPELINE: Serverless Library Catalog
+# Resolves dependency persistence issues by using global paths.
 # =========================================================================
 
 image: python:3.11-slim
@@ -9,22 +10,22 @@ variables:
   TF_ROOT: infra/terraform
   TF_PLAN: tfplan.out
   APP_ZIP_NAME: deployment_package.zip
+  # Define a global bin path for manually installed binaries (Terraform, Poetry)
+  GLOBAL_BIN_PATH: /usr/local/bin
   AWS_DEFAULT_REGION: $AWS_REGION
 
 # Define the pipeline stages
 stages:
   - setup
   - build
-  - infra
-  - deploy
+  # - infra
+  # - deploy
 
 # -------------------------------------------------------------------------
 # 1. SETUP STAGE (Installation of essential tools)
 # -------------------------------------------------------------------------
 
-# Template job for installing all dependencies and tools
 .setup_dependencies:
-  # CRITICAL FIX: Ensure template uses a defined stage
   stage: setup
   script:
     - python -m pip install --upgrade pip
@@ -32,40 +33,39 @@ stages:
     # 1. Install system tools (make, wget, unzip)
     - apt-get update && apt-get install -y make wget unzip
 
-    # 2. Install Poetry globally via pip --user
-    - pip install --user poetry
+    # 2. Install Poetry globally into the image's environment (no --user)
+    # This makes 'poetry' immediately available in the PATH for this and subsequent jobs.
+    - pip install poetry
 
-    # 3. Configure Poetry to create .venv locally (essential for caching/artifacts)
-    - export PATH="$PATH:$HOME/.local/bin" # Add poetry to PATH for immediate use
+    # 3. Configure Poetry to create .venv locally (essential for artifacts/cache)
     - poetry config virtualenvs.in-project true
     - poetry install
 
-    # 4. Install Terraform and move it to a cacheable location
+    # 4. Install Terraform and move it to the global path
     - wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
     - unzip terraform_1.5.7_linux_amd64.zip
-    - mv terraform $HOME/.local/bin/
+    - mv terraform $GLOBAL_BIN_PATH/ # Moves Terraform to /usr/local/bin/
 
 # Job that executes the installation and defines artifacts/cache
 setup:
   stage: setup
   extends:
-    - .setup_dependencies # CORRECT: Uses list syntax
+    - .setup_dependencies
 
-  # Ensure the necessary bin directory is available in this shell execution
-  before_script:
-    - export PATH="$PATH:$HOME/.local/bin"
+  # before_script is now unnecessary here as 'poetry' is installed globally
+  # and the cache will handle the environment.
 
   artifacts:
+    # Pass the local .venv (created by poetry install) and the global binary path
     paths:
       - .venv/
-      - $HOME/.local/bin/terraform
+      - $GLOBAL_BIN_PATH/terraform # Reference to /usr/local/bin/terraform
     expire_in: 1 day
 
-  # Use cache to save the global installation of pip --user and poetry
+  # Use cache to save the large .venv directory
   cache:
     key: $CI_COMMIT_REF_SLUG-poetry
     paths:
-      - $HOME/.local/
       - .venv/
 
 # -------------------------------------------------------------------------
@@ -75,12 +75,11 @@ setup:
 # Base job to inherit necessary setup properties
 .inherit_setup:
   stage: build
-  # Re-establish PATH for global tools and restore cache
-  before_script:
-    - export PATH="$PATH:$HOME/.local/bin"
+  # No export PATH needed because 'poetry' and 'terraform' are in /usr/local/bin
+  # and /usr/local/bin is usually in the default PATH of a Linux image.
   cache:
     key: $CI_COMMIT_REF_SLUG-poetry
-    policy: pull
+    policy: pull # Pulls the cached .venv
   dependencies:
     - setup
 
@@ -89,7 +88,7 @@ lint_and_test:
     - .inherit_setup
   script:
     - echo "Running quality checks (Ruff, Mypy, Pytest)..."
-    # Use 'poetry run' to execute commands reliably inside the virtual environment
+    # 'poetry run' will now be found globally and will correctly use the restored .venv
     - poetry run make check
   except:
     - main
@@ -99,7 +98,6 @@ package_lambda:
     - .inherit_setup
   script:
     - echo "Packaging Lambda code and dependencies..."
-    # Execute the make target which handles packaging logic (poetry run is handled in the Makefile or needs to be added here if 'make' doesn't use it)
     - poetry run make zip
 
   artifacts:
@@ -107,7 +105,7 @@ package_lambda:
       - $APP_ZIP_NAME
   only:
     - main
-# # -------------------------------------------------------------------------
+# # ------------------------------------------------------
 # # 3. INFRA STAGE (Terraform Provisioning/Update)
 # # -------------------------------------------------------------------------
 
