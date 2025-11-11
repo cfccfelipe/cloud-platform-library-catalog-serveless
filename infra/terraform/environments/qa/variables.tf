@@ -31,3 +31,15 @@ variable "catalog_table_name" {
   type        = string
   default     = "library-catalog-requests-table"
 }
+
+variable "main_queue_name" {
+  description = "Base name of the main SQS queue"
+  type        = string
+  default     = "book-requests-queue"
+}
+
+variable "dlq_name" {
+  description = "Base name of the Dead Letter Queue"
+  type        = string
+  default     = "book-requests-dlq"
+}

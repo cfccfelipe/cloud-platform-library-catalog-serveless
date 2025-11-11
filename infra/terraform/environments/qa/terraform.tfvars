@@ -12,3 +12,6 @@ lock_table_name   = "company-qa-terraform-locks"
 # Catalog table
 catalog_table_name = "library-catalog-requests-qa"
 
+# SQS queues
+main_queue_name = "book-requests-queue"
+dlq_name        = "book-requests-dlq"
