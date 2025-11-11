@@ -1,0 +1,59 @@
+# --- General Operating System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Python ---
+# Bytecode files
+*.pyc
+__pycache__/
+venv/
+.venv/
+env/
+
+# Compilation artifacts
+*.egg-info/
+dist/
+build/
+
+# --- Dependency Management (Poetry/Pip) ---
+# Poetry's locked dependency file (usually committed, but sometimes excluded if managed differently)
+# poetry.lock
+# Virtual environment directories created by Poetry/Pip
+.poetry_cache/
+.tox/
+
+# --- IDE and Editor Files ---
+.vscode/        # VS Code settings (if user-specific)
+.idea/          # JetBrains IDE (PyCharm, IntelliJ)
+*.swp           # Vim/Vim-like editors
+
+# --- Testing and Coverage ---
+.pytest_cache/
+.coverage
+htmlcov/
+.nox/
+
+# --- Deployment and Infrastructure as Code (IaC) ---
+# Terraform (Req. 3.a)
+# State files (NEVER commit state files, especially in a team environment!)
+**/*.tfstate
+**/*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+# Plan files
+*.tfplan
+*.tfplan.out
+
+# AWS/Serverless Artifacts
+# Zipped application code for Lambda deployment
+deployment_package.zip
+*.zip
+*.tar.gz
+
+# Local configuration files (should be managed by .env or secrets)
+.env
+.env.local
+.secret
+
+# Local logs
+*.log
