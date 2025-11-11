@@ -4,13 +4,13 @@ variable "environment" {
 }
 
 variable "main_queue_name" {
-  description = "Base name of the main SQS queue"
+  description = "Base name of the main SQS queue (without environment prefix)"
   type        = string
   default     = "book-requests-queue"
 }
 
 variable "dlq_name" {
-  description = "Base name of the Dead Letter Queue"
+  description = "Base name of the Dead Letter Queue (without environment prefix)"
   type        = string
   default     = "book-requests-dlq"
 }
@@ -22,13 +22,13 @@ variable "visibility_timeout" {
 }
 
 variable "max_receive_count" {
-  description = "Max number of times a message is received before moving to DLQ"
+  description = "Maximum number of times a message is received before moving to DLQ"
   type        = number
   default     = 3
 }
 
 variable "dlq_retention_seconds" {
-  description = "Retention period for messages in DLQ (default 14 days)"
+  description = "Retention period for messages in DLQ (seconds, default 14 days)"
   type        = number
   default     = 1209600
 }

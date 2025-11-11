@@ -1,11 +1,16 @@
 output "main_queue_name" {
   description = "Name of the main SQS queue"
-  value       = aws_sqs_queue.main.name
+  value       = aws_sqs_queue.main_queue.name
 }
 
 output "main_queue_arn" {
   description = "ARN of the main SQS queue"
-  value       = aws_sqs_queue.main.arn
+  value       = aws_sqs_queue.main_queue.arn
+}
+
+output "main_queue_url" {
+  description = "URL of the main SQS queue"
+  value       = aws_sqs_queue.main_queue.id
 }
 
 output "dlq_name" {

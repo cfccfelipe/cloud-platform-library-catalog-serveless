@@ -1,9 +1,7 @@
-# terraform.tfvars for QA environment
+aws_region  = "us-east-1"
+aws_profile = "default"   # opcional, cámbialo si usas otro perfil en AWS CLI
 
-aws_region        = "us-east-1"
-aws_profile       = "default"   # opcional, cámbialo si usas otro perfil en AWS CLI
-
-environment       = "qa"
+environment = "qa"
 
 # Remote state backend
 state_bucket_name = "company-qa-terraform-state"
@@ -15,3 +13,12 @@ catalog_table_name = "library-catalog-requests-qa"
 # SQS queues
 main_queue_name = "book-requests-queue"
 dlq_name        = "book-requests-dlq"
+
+# Lambda Producer
+producer_lambda_function_name = "qa-library-fn-producer"
+producer_lambda_role_name     = "qa-library-fn-producer-role"
+producer_lambda_package       = "../../build/producer_lambda.zip"
+
+# Lambda Consumer
+consumer_lambda_function_name = "qa-library-fn-consumer"
+consumer_lambda_role_name     = "qa-library-fn-consumer-role"

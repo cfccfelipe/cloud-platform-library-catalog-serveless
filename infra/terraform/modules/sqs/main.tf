@@ -10,7 +10,7 @@ resource "aws_sqs_queue" "dlq" {
 }
 
 # Main SQS Queue
-resource "aws_sqs_queue" "main" {
+resource "aws_sqs_queue" "main_queue" {
   name                       = "${var.environment}-${var.main_queue_name}"
   visibility_timeout_seconds = var.visibility_timeout
 
