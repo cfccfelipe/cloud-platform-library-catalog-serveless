@@ -17,7 +17,7 @@ resource "aws_iam_role" "lambda_role" {
   }
 }
 
-# DynamoDB Policy (optional)
+# DynamoDB Policy (required for consumer Lambda)
 resource "aws_iam_policy" "lambda_dynamodb_policy" {
   count       = var.enable_dynamodb ? 1 : 0
   name        = "${var.lambda_role_name}-dynamodb-policy"
@@ -25,15 +25,20 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = [
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:UpdateItem"
-      ]
-      Resource = var.dynamodb_table_arn
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = var.dynamodb_table_arn
+      }
+    ]
   })
 }
 
@@ -123,4 +128,3 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_producer_attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_sqs_producer_policy[0].arn
 }
-

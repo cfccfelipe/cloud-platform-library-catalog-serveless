@@ -70,9 +70,8 @@ infra-destroy:
 # =========================================================================
 # 3. APPLICATION & DEPLOYMENT
 # =========================================================================
-
 zip:
-	@echo "--- 📦 Packaging Lambda source code and dependencies ---"
+	@echo "--- 📦 Packaging Consumer Lambda source code and dependencies ---"
 	mkdir -p infra/terraform/build
 	mkdir -p infra/terraform/package
 
@@ -85,15 +84,15 @@ zip:
     # Copiar toda la carpeta src (mantiene imports absolutos)
 	cp -r src infra/terraform/package/
 
-    # Crear el zip final
+    # Crear el zip final para consumer
+	cd infra/terraform/package && zip -r ../build/consumer_lambda.zip .
 	cd infra/terraform/package && zip -r ../build/producer_lambda.zip .
 
     # Limpiar temporales
 	rm -rf infra/terraform/package
 	rm -f $(SCRIPTS_DIR)/requirements.txt
 
-	@echo "✅ Packaging complete: infra/terraform/build/producer_lambda.zip listo con dependencias incluidas."
-
+	@echo "✅ Packaging complete: infra/terraform/build/consumer_lambda.zip listo con dependencias incluidas."
 
 deploy: zip infra-apply
 	@echo "--- ⬆️ Deploying application code to existing Lambdas ---"

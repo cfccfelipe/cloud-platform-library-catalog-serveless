@@ -47,6 +47,7 @@ module "consumer_lambda_iam" {
   source               = "../../modules/iam"
   lambda_role_name     = "consumer-lambda-role-${var.environment}"
   environment          = var.environment
+  enable_dynamodb      = true
 
   enable_sqs_consumer  = var.enable_sqs_consumer
   dynamodb_table_arn   = module.catalog_table.table_arn
@@ -55,6 +56,7 @@ module "consumer_lambda_iam" {
   enable_logs          = var.enable_logs
 }
 
+# Consumer Lambda function
 module "consumer_lambda" {
   source               = "../../modules/lambda"
   environment          = var.environment
@@ -70,11 +72,13 @@ module "consumer_lambda" {
   }
 
   # Event source mapping config
-  sqs_main_queue_arn     = module.sqs.main_queue_arn
-  batch_size             = 10
-  maximum_retry_attempts = 3
-  enabled                = true
+  sqs_main_queue_arn  = module.sqs.main_queue_arn
+  batch_size          = 10
+  enable_sqs_consumer = true   # 👈 faltaba esto
+
+  depends_on = [module.consumer_lambda_iam]
 }
+
 
 # IAM Role + Policy for the producer Lambda (send-only)
 module "producer_lambda_iam" {
@@ -89,7 +93,8 @@ module "producer_lambda_iam" {
 module "producer_lambda" {
   source               = "../../modules/lambda"
   environment          = var.environment
-
+  enable_sqs_consumer   = false
+  sqs_main_queue_arn   = module.sqs.main_queue_arn
   lambda_function_name = "${var.environment}-library-fn-producer"
   lambda_role_arn      = module.producer_lambda_iam.lambda_role_arn
   filename             = var.producer_lambda_package
@@ -99,6 +104,9 @@ module "producer_lambda" {
   environment_variables = {
     SQS_QUEUE_URL = module.sqs.main_queue_url
   }
+
+  # 🔑 Ensure IAM role/policies are created before Lambda mapping
+  depends_on = [module.producer_lambda_iam]
 }
 
 module "apigw_cloudwatch_iam" {

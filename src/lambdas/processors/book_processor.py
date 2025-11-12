@@ -17,9 +17,13 @@ def parse_record(
         - payload: dict or None if invalid.
         - meta: dict with messageId and optional error.
     """
-    meta = {"id": record.get("messageId")}
+    meta: dict[str, Any] = {"id": record.get("messageId")}
     try:
         body = json.loads(record.get("body", "{}"))
-        return body.get("kind"), body.get("payload"), meta
+        kind = body.get("kind")
+        # Accept both "payload" and "data" keys
+        payload = body.get("payload") or body.get("data")
+        meta.update(body.get("meta", {}))
+        return kind, payload, meta
     except json.JSONDecodeError:
         return None, None, {**meta, "error": "Invalid JSON"}

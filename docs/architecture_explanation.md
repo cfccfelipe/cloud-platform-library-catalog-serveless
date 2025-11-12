@@ -38,7 +38,7 @@ Continuing the flow shown in the diagram:
 
 ## 3. Infrastructure as Code (IaC)
 
-All resources are managed by **Terraform/Pulumi** (Req. 3.a) to ensure a reproducible and reliable deployment process.
+All resources are managed by **Terraform** (Req. 3.a) to ensure a reproducible and reliable deployment process.
 
 | Resource Group | Requirements Covered | Security Note (Req. 4.c) |
 | :--- | :--- | :--- |
