@@ -8,12 +8,12 @@ from src.lambdas.validation.factory import ValidatorFactory
 
 class EnrichmentFacade:
     """
-    Facade to orchestrate validation, enrichment, and persistence of SQS message payloads.
+    Facade to orchestrate validation, enrichment, and of SQS message payloads.
 
     Responsibilities:
     - Retrieve the appropriate validator for the given kind.
     - Validate the payload and handle validation errors.
-    - Apply enrichment functions in sequence (e.g., timestamps, hashes, external API calls).
+    - Apply enrichment (e.g., timestamps, hashes, external API calls).
     - Persist the enriched record using the storage adapter.
     """
 

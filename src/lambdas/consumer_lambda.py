@@ -16,7 +16,7 @@ facade: EnrichmentFacade | None = None
 
 def lambda_handler(event: dict[str, Any], context: Context | None) -> dict[str, Any]:
     """
-    AWS Lambda handler for consuming SQS messages and persisting enriched records to DynamoDB.
+    AWS Lambda handler  and persisting enriched records to DynamoDB.
 
     Responsibilities:
     - Initialize DynamoDB storage and Facade on the first invocation (lazy init).
