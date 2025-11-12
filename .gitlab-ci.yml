@@ -1,8 +1,14 @@
 image: python:3.11-slim
 
 variables:
+
   APP_ZIP_NAME: deployment_package.zip
-  AWS_DEFAULT_REGION: $AWS_REGION
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  TERRAFORM_DIR: infra/terraform/environments/qa
+  LAMBDA_SRC_DIR: src/lambdas
+  SCRIPTS_DIR: scripts
+
 
 stages:
   - setup
