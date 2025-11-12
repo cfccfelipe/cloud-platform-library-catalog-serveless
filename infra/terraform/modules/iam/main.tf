@@ -30,9 +30,7 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
       Action   = [
         "dynamodb:GetItem",
         "dynamodb:PutItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:Query",
-        "dynamodb:Scan"
+        "dynamodb:UpdateItem"
       ]
       Resource = var.dynamodb_table_arn
     }]

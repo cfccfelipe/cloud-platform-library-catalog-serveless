@@ -15,7 +15,7 @@ This repository contains the final project for the Cloud Platform Engineer speci
 | **Messaging**           | AWS SQS (with DLQ)               | Decoupling and resilience for asynchronous processing |
 | **Database**            | AWS DynamoDB                     | Highly available, scalable NoSQL storage              |
 | **Infra as Code (IaC)** | Terraform                        | Declarative management of all AWS resources           |
-| **Workflow**            | GitHub Projects, Issues, and PRs | Agile planning and traceability                       |
+| **Workflow**            | Gitlab Projects, Issues, and PRs | Agile planning and traceability                       |
 
 ---
 ## 🧭 Event-Driven Architecture
@@ -36,7 +36,7 @@ This repository contains the final project for the Cloud Platform Engineer speci
 
 ### 📂 Project Directory Structure
 
-    ├── .github/                      # GitHub workflow templates (Issues, PRs)
+    ├── .github/                      # Gitlab workflow templates (Issues, PRs)
     ├── infra/                        # Infrastructure as Code (IaC)
     │   └── terraform/                # Terraform configuration files (.tf, variables.tf)
     │── src/                          # Application source code (Python)
@@ -142,7 +142,7 @@ Commit message:
 
 | Step                    | Action                                                             | Merge Condition                                            |
 | :---------------------- | :----------------------------------------------------------------- | :--------------------------------------------------------- |
-| **1. Open a PR**        | Open a **Pull Request** on GitHub.                                 | Req. 1.d: Links code change to PR.                         |
+| **1. Open a PR**        | Open a **Pull Request** on GitLab.                                 | Req. 1.d: Links code change to PR.                         |
 | **2. PR Linking**       | Ensure the PR body contains: `Closes #<issue_id>`                  | **Full Traceability:** Links the PR to the resolved Issue. |
 | **3. CI/CD Validation** | The **GitLab CI/CD Pipeline must pass** (Lint, Tests, Infra Plan). | Only green pipelines are eligible for merge (Req. 4.b).    |
 | **4. Final Merge**      | Code is merged into the **`main`** branch after reviewer approval. | `main` is the deployment branch.                           |
