@@ -6,13 +6,13 @@ from typing import Any
 import boto3
 from aws_lambda_typing.context import Context
 
-from .validation.factory import ValidatorFactory
+from src.lambdas.validation.factory import ValidatorFactory
 
 sqs = boto3.client("sqs")
 QUEUE_URL = os.getenv("SQS_QUEUE_URL", "")
 
 
-def handler(event: dict[str, Any], context: Context | None) -> dict[str, Any]:
+def lambda_handler(event: dict[str, Any], context: Context | None) -> dict[str, Any]:
     try:
         body = event.get("body")
         data: dict[str, Any] = json.loads(body) if isinstance(body, str) else body or {}

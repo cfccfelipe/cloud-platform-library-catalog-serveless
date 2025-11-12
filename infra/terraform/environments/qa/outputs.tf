@@ -75,6 +75,11 @@ output "producer_lambda_name" {
   value       = module.producer_lambda.lambda_function_name
 }
 
+output "producer_lambda_arn" {
+  description = "ARN of the producer Lambda function"
+  value       = module.producer_lambda.lambda_function_arn
+}
+
 output "producer_lambda_role_arn" {
   description = "ARN of the IAM role for the producer Lambda"
   value       = module.producer_lambda_iam.lambda_role_arn
@@ -85,3 +90,9 @@ output "producer_lambda_sqs_policy_arn" {
   value       = module.producer_lambda_iam.sqs_producer_policy_arn
 }
 
+#API Gateway
+
+output "api_gateway_invoke_url" {
+  description = "Base invoke URL for the API Gateway stage"
+  value       = "https://${module.api_gateway.api_id}.execute-api.${var.aws_region}.amazonaws.com/${var.environment}"
+}

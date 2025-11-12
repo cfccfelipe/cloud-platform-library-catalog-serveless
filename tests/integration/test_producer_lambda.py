@@ -34,7 +34,7 @@ def test_lambda_success(monkeypatch):
     }
 
     # Run Lambda handler
-    resp = producer_lambda.handler(event, None)
+    resp = producer_lambda.lambda_handler(event, None)
     assert resp["statusCode"] == 200
     assert len(fake_sqs.sent_messages) == 1
 
@@ -66,7 +66,7 @@ def test_lambda_invalid_payload(monkeypatch):
         })
     }
 
-    resp = producer_lambda.handler(event, None)
+    resp = producer_lambda.lambda_handler(event, None)
     assert resp["statusCode"] == 400
     assert len(fake_sqs.sent_messages) == 0
 
@@ -87,7 +87,7 @@ def test_lambda_unknown_kind(monkeypatch):
         })
     }
 
-    resp = producer_lambda.handler(event, None)
+    resp = producer_lambda.lambda_handler(event, None)
     assert resp["statusCode"] == 400
     assert "Unsupported kind" in resp["body"]
     assert len(fake_sqs.sent_messages) == 0
@@ -99,7 +99,7 @@ def test_lambda_invalid_json(monkeypatch):
     monkeypatch.setenv("SQS_QUEUE_URL", "https://sqs.local/queue")
 
     event = {"body": "not-a-json-string"}
-    resp = producer_lambda.handler(event, None)
+    resp = producer_lambda.lambda_handler(event, None)
     assert resp["statusCode"] == 400
     assert "Invalid JSON" in resp["body"]
     assert len(fake_sqs.sent_messages) == 0
