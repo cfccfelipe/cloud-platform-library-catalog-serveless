@@ -112,7 +112,7 @@ check:
 
 test:
 	@echo "--- 🧪 Running tests ---"
-	poetry run pytest src/tests/
+	poetry run pytest tests/
 
 clean:
 	@echo "--- 🗑️ Cleaning local environment files ---"
