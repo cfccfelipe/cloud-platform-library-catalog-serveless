@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any
 
@@ -9,67 +10,73 @@ from src.lambdas.processors.book_processor import parse_record
 from src.lambdas.storage.dynamo_adapter import DynamoDBAdapter
 from src.lambdas.validation.factory import ValidatorFactory
 
-# Lazy initialization: storage y facade se crean en el primer llamado
+# Lazy initialization
 storage: DynamoDBAdapter | None = None
 facade: EnrichmentFacade | None = None
 
 
 def lambda_handler(event: dict[str, Any], context: Context | None) -> dict[str, Any]:
-    """
-    AWS Lambda handler  and persisting enriched records to DynamoDB.
-
-    Responsibilities:
-    - Initialize DynamoDB storage and Facade on the first invocation (lazy init).
-    - Iterate over SQS records in the event (batch handling).
-    - Parse each record (kind, payload, metadata).
-    - Process payloads via Facade (validate, enrich, persist).
-    - Collect results into success and failed lists.
-
-    Args:
-        event: Lambda event containing SQS Records.
-        context: Lambda context object (unused here).
-
-    Returns:
-        dict with:
-        - status: "processed"
-        - results: {
-            "success": [list of successfully processed records],
-            "failed": [list of failed records with error info]
-        }
-    """
     global storage, facade
+    print("EVENT RAW:", json.dumps(event))
 
+    # Initialize storage
     if storage is None:
         table_name = os.getenv("CATALOG_TABLE_NAME")
         if not table_name:
             raise RuntimeError("CATALOG_TABLE_NAME environment variable is required")
         storage = DynamoDBAdapter(table_name)
+        print(f"Initialized DynamoDBAdapter with table: {table_name}")
 
+    # Initialize facade
     if facade is None:
         facade = EnrichmentFacade(
             validator_factory=ValidatorFactory,
             enrichers=build_enrichers_for_kind(),
             storage=storage,
         )
+        print("Initialized EnrichmentFacade")
 
     results: dict[str, Any] = {"success": [], "failed": []}
 
     for record in event.get("Records", []):
+        print("Processing record:", json.dumps(record))
         kind, payload, meta = parse_record(record)
+        print("Parsed record:", {"kind": kind, "payload": payload, "meta": meta})
+
+        # Only treat None as malformed (not empty dicts)
         if kind is None or payload is None:
-            results["failed"].append(
-                {**meta, "ok": False, "error": meta.get("error", "Malformed message")}
-            )
+            error_info = {
+                **meta,
+                "ok": False,
+                "error": meta.get("error", "Malformed message"),
+            }
+            results["failed"].append(error_info)
+            print("Failed to parse record:", error_info)
             continue
 
+        # Always set 'id' for DynamoDB
+        if payload.get("isbn"):
+            payload["id"] = payload["isbn"]
+            print(f"Using ISBN as id: {payload['id']}")
+        else:
+            payload["id"] = meta.get("id")
+            print(f"Fallback id from meta: {payload['id']}")
+
         try:
+            print("Calling facade.process with payload:", payload)
             res = facade.process(kind, payload, meta)
+            print("Facade result:", res)
+
             if res.get("ok"):
-                # Success: enriched record persisted to DynamoDB
                 results["success"].append(res)
+                print("Successfully persisted:", res)
             else:
                 results["failed"].append(res)
+                print("Failed to process:", res)
         except Exception as e:
-            results["failed"].append({**meta, "ok": False, "error": str(e)})
+            error_info = {**meta, "ok": False, "error": str(e)}
+            results["failed"].append(error_info)
+            print("Exception during processing:", error_info)
 
+    print("Final results:", results)
     return {"status": "processed", "results": results}

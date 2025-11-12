@@ -4,7 +4,7 @@ resource "aws_lambda_function" "lambda" {
   role          = var.lambda_role_arn   # IAM role passed in from external IAM module
   handler       = var.handler
   runtime       = var.runtime
-
+  timeout       = 10
   filename         = var.filename
   source_code_hash = filebase64sha256(var.filename)
 
@@ -19,9 +19,12 @@ resource "aws_lambda_function" "lambda" {
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_consumer" {
-  event_source_arn        = var.sqs_main_queue_arn
-  function_name           = aws_lambda_function.lambda.arn
-  batch_size              = 10
-  maximum_retry_attempts  = 3
-  enabled                 = true
+  count            = var.enable_sqs_consumer ? 1 : 0
+  event_source_arn = var.sqs_main_queue_arn
+  function_name    = aws_lambda_function.lambda.function_name  # 👈 más claro
+  batch_size       = var.batch_size
+  enabled          = true
+
+  depends_on = [aws_lambda_function.lambda]
 }
+

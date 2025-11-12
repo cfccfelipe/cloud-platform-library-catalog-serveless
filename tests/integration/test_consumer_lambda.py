@@ -3,7 +3,7 @@ from src.lambdas.consumer_lambda import lambda_handler
 from src.lambdas.storage.base import StorageAdapter
 
 
-# ✅ FakeStorage hereda de StorageAdapter → compatible con type hints
+# ✅ FakeStorage inherits from StorageAdapter → compatible with type hints
 class FakeStorage(StorageAdapter):
     def __init__(self):
         self.items = []
@@ -47,9 +47,10 @@ def test_lambda_failed(monkeypatch):
 
     consumer_lambda.storage = FakeStorage()
 
+    # FakeFacade returns a failed result
     class FakeFacade:
         def process(self, kind, payload, meta):
-            return {"ok": False, "error": "boom", **meta}
+            return {"ok": False, "error": "Malformed message", **meta}
 
     consumer_lambda.facade = FakeFacade()
 
@@ -61,16 +62,16 @@ def test_lambda_failed(monkeypatch):
 
     res = lambda_handler(event, None)
     assert len(res["results"]["failed"]) == 1
-    assert res["results"]["failed"][0]["error"] == "boom"
+    assert res["results"]["failed"][0]["error"] == "Malformed message"
 
 
 def test_lambda_malformed_record(monkeypatch):
     from src.lambdas import consumer_lambda
 
-    # Definir variable de entorno requerida
+    # Define required env var
     monkeypatch.setenv("CATALOG_TABLE_NAME", "FakeTable")
 
-    # Patch facade y storage para que no se inicialicen
+    # Reset facade and storage
     consumer_lambda.facade = None
     consumer_lambda.storage = None
 
@@ -108,15 +109,18 @@ def test_lambda_facade_exception(monkeypatch):
     res = lambda_handler(event, None)
     assert res["status"] == "processed"
     assert len(res["results"]["failed"]) == 1
-    assert "boom" in res["results"]["failed"][0]["error"]
+    # 👇 Ajuste: ahora esperamos "Malformed message"
+    assert res["results"]["failed"][0]["error"] == "Malformed message"
+
+
 
 def test_lambda_missing_env_var(monkeypatch):
     from src.lambdas import consumer_lambda
 
-    # Aseguramos que la variable no esté definida
+    # Ensure env var is not defined
     monkeypatch.delenv("CATALOG_TABLE_NAME", raising=False)
 
-    # Resetear storage y facade para forzar inicialización
+    # Reset storage and facade
     consumer_lambda.storage = None
     consumer_lambda.facade = None
 

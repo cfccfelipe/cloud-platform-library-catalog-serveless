@@ -67,7 +67,7 @@ variable "producer_lambda_package" {
   default     = "../../build/producer_lambda.zip"
 }
 
-# Consumer Lambda (optional, si quieres parametrizar también desde root)
+# Consumer Lambda
 variable "consumer_lambda_function_name" {
   description = "Name of the consumer Lambda function"
   type        = string
@@ -78,4 +78,29 @@ variable "consumer_lambda_role_name" {
   description = "Name of the IAM role for the consumer Lambda"
   type        = string
   default     = "library-fn-consumer-role"
+}
+
+variable "consumer_lambda_package" {
+  description = "Path to the deployment package zip file for consumer Lambda"
+  type        = string
+  default     = "../../build/consumer_lambda.zip"
+}
+
+# IAM flags
+variable "enable_sqs_consumer" {
+  description = "Enable IAM permissions for consumer Lambda to read from SQS"
+  type        = bool
+  default     = true
+}
+
+variable "enable_logs" {
+  description = "Enable IAM permissions for Lambda to write to CloudWatch Logs"
+  type        = bool
+  default     = true
+}
+
+variable "enable_sqs_producer" {
+  description = "Enable IAM permissions for producer Lambda to write to SQS"
+  type        = bool
+  default     = true
 }
