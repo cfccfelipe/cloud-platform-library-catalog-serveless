@@ -1,40 +1,25 @@
 import json
-from datetime import UTC, datetime
 from typing import Any
 
-from src.lambdas.storage.base import StorageAdapter
-from src.lambdas.validation.factory import ValidatorFactory
 
-
-def process_record(record: dict, storage: StorageAdapter) -> dict[str, Any]:
+def parse_record(
+    record: dict[str, Any],
+) -> tuple[str | None, dict[str, Any] | None, dict[str, Any]]:
     """
-    Process a single SQS record:
-    - Extract payload
-    - Validate using factory
-    - Persist via storage adapter
+    Parse an SQS record into kind, payload, and metadata.
+
+    Args:
+        record: Raw SQS record containing 'messageId' and 'body'.
+
+    Returns:
+        A tuple of (kind, payload, meta):
+        - kind: str or None if missing.
+        - payload: dict or None if invalid.
+        - meta: dict with messageId and optional error.
     """
-    body = json.loads(record["body"])
-    kind = body.get("kind", "").lower()
-    payload = body.get("payload", {})
-
-    validator = ValidatorFactory.get_validator(kind)
-    if not validator:
-        return {
-            "id": record.get("messageId"),
-            "error": f"No validator for kind '{kind}'",
-        }
-
-    validated, errors = validator.validate(payload)
-    if validated is None:
-        return {"id": record.get("messageId"), "error": errors}
-
-    item = {
-        "id": f"req-{record['messageId']}",
-        "title": validated["title"],
-        "isbn": validated["isbn"],
-        "requester_email": validated["requester_email"],
-        "processed_at": datetime.now(UTC).isoformat(),
-    }
-
-    storage.put_item(item)
-    return {"ok": True, "id": item["id"]}
+    meta = {"id": record.get("messageId")}
+    try:
+        body = json.loads(record.get("body", "{}"))
+        return body.get("kind"), body.get("payload"), meta
+    except json.JSONDecodeError:
+        return None, None, {**meta, "error": "Invalid JSON"}
