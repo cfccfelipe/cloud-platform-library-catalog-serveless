@@ -5,13 +5,14 @@ description = "Resilient, serverless application on AWS to manage book requests 
 authors = ["Felipe <felipe_cortes@epam.com>"]
 license = "MIT"
 readme = "README.md"
-package-mode = false
+packages= [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 boto3 = "^1.33.0"
 requests = "^2.31.0"
-pydantic = "^2.5.0"
+pydantic = {extras = ["email"], version = "^2.12.4"}
+aws-lambda-typing = "^2.20.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -35,9 +36,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-# Agregamos esta línea para mayor estrictez y prevenir código incompleto
 disallow_incomplete_defs = true
-# Excluimos directorios que no deben ser analizados
 exclude = ["tests", "deployments", "venv"]
 
 # ---------------------------
@@ -72,8 +71,7 @@ fixable = ["ALL"]
 # Pytest configuration
 # ---------------------------
 [tool.pytest.ini_options]
-# Los archivos de prueba deben estar en el directorio 'tests'
+pythonpath = ["src"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-# Flags comunes para verbosidad, trazas cortas y reporte de cobertura
 addopts = "-vvv --tb=short --cov=src --cov-report=term-missing --maxfail=1"

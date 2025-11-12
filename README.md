@@ -75,20 +75,17 @@ This repository contains the final project for the Cloud Platform Engineer speci
 
 1. **Clone the repository:**
 
-   ```bash
+```bash
 
    git clone git@git.epam.com:felipe_cortes/cloud-platform-08-2025-library-catalog-serveless.git
 
    cd cloud-platform-08-2025-library-catalog-serveless
-
-    ```
+```
 
 2. **Setup dependencies:**
 
 ```bash
-
     make setup
-
 ```
 
 3. **Test and deploy:**

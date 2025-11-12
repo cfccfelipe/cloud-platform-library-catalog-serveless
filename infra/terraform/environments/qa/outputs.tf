@@ -48,6 +48,11 @@ output "qa_sqs_main_queue_name" {
   value       = module.sqs.main_queue_name
 }
 
+output "qa_sqs_main_url" {
+  description = "URL of the main SQS queue"
+  value       = module.sqs.main_queue_url
+}
+
 output "qa_sqs_main_queue_arn" {
   description = "Main SQS queue ARN"
   value       = module.sqs.main_queue_arn
@@ -62,6 +67,7 @@ output "qa_sqs_dlq_arn" {
   description = "Dead Letter Queue ARN"
   value       = module.sqs.dlq_arn
 }
+
 
 # Producer Lambda
 output "producer_lambda_name" {
