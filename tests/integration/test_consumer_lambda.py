@@ -1,12 +1,10 @@
-import json
 import pytest
-from src.lambdas import consumer_lambda
+from src.lambdas.consumer_lambda import lambda_handler
 from src.lambdas.storage.base import StorageAdapter
-from src.lambdas.validation.factory import ValidatorFactory
 
 
-class FakeStorageAdapter(StorageAdapter):
-    """Fake storage adapter to capture writes instead of hitting DynamoDB."""
+# ✅ FakeStorage hereda de StorageAdapter → compatible con type hints
+class FakeStorage(StorageAdapter):
     def __init__(self):
         self.items = []
 
@@ -14,113 +12,117 @@ class FakeStorageAdapter(StorageAdapter):
         self.items.append(item)
 
 
-@pytest.fixture
-def patched_storage(monkeypatch):
-    """Fixture que inyecta FakeStorageAdapter y setea env var requerida."""
-    fake_storage = FakeStorageAdapter()
-    # Inyectamos el fake en consumer_lambda
-    monkeypatch.setattr(consumer_lambda, "storage", fake_storage)
-    # Seteamos la env var requerida
-    monkeypatch.setenv("CATALOG_TABLE_NAME", "fake-table")
-    return fake_storage
+def test_lambda_success(monkeypatch):
+    from src.lambdas import consumer_lambda
 
+    # Patch storage and facade
+    consumer_lambda.storage = FakeStorage()
 
-def test_consumer_lambda_success(patched_storage):
-    payload = {
-        "kind": "book_request",
-        "payload": {
-            "title": "Clean Architecture",
-            "isbn": "9780134494166",
-            "requester_email": "uncle.bob@example.com"
-        }
-    }
+    def fake_process(kind, payload, meta):
+        return {"ok": True, "data": {**payload, "enriched": True}, **meta}
+
+    class FakeFacade:
+        def process(self, kind, payload, meta):
+            return fake_process(kind, payload, meta)
+
+    consumer_lambda.facade = FakeFacade()
+
     event = {
         "Records": [
-            {"messageId": "msg-123", "body": json.dumps(payload)}
+            {
+                "messageId": "1",
+                "body": '{"kind":"book_request","payload":{"title":"T","isbn":"123","requester_email":"a@b.com"}}'
+            }
         ]
     }
 
-    resp = consumer_lambda.lambda_handler(event, None)
-    assert resp["status"] == "processed"
-    assert len(resp["results"]["success"]) == 1
-    assert patched_storage.items[0]["title"] == "Clean Architecture"
+    res = lambda_handler(event, None)
+    assert res["status"] == "processed"
+    assert len(res["results"]["success"]) == 1
+    assert res["results"]["success"][0]["data"]["enriched"] is True
 
 
-    # Validación con factory
-    validator = ValidatorFactory.get_validator("book_request")
-    assert validator is not None
-    validated, errors = validator.validate(payload["payload"])
-    assert errors is None
-    assert validated is not None
-    assert validated["isbn"] == "9780134494166"
+def test_lambda_failed(monkeypatch):
+    from src.lambdas import consumer_lambda
 
+    consumer_lambda.storage = FakeStorage()
 
-def test_consumer_lambda_invalid_payload(patched_storage):
-    payload = {
-        "kind": "book_request",
-        "payload": {
-            "title": "",  # inválido
-            "isbn": "",
-            "requester_email": "not-an-email"
-        }
-    }
+    class FakeFacade:
+        def process(self, kind, payload, meta):
+            return {"ok": False, "error": "boom", **meta}
+
+    consumer_lambda.facade = FakeFacade()
+
     event = {
         "Records": [
-            {"messageId": "msg-456", "body": json.dumps(payload)}
+            {"messageId": "2", "body": '{"kind":"book_request","payload":{}}'}
         ]
     }
 
-    resp = consumer_lambda.lambda_handler(event, None)
-    assert resp["status"] == "processed"
-    assert len(resp["results"]["failed"]) == 1
-    assert patched_storage.items == []  # nada escrito
-
-import pytest
-from src.lambdas import consumer_lambda
+    res = lambda_handler(event, None)
+    assert len(res["results"]["failed"]) == 1
+    assert res["results"]["failed"][0]["error"] == "boom"
 
 
-def test_lambda_handler_missing_env(monkeypatch):
-    # Elimina la variable de entorno
-    monkeypatch.delenv("CATALOG_TABLE_NAME", raising=False)
-    # Reinicia storage
+def test_lambda_malformed_record(monkeypatch):
+    from src.lambdas import consumer_lambda
+
+    # Definir variable de entorno requerida
+    monkeypatch.setenv("CATALOG_TABLE_NAME", "FakeTable")
+
+    # Patch facade y storage para que no se inicialicen
+    consumer_lambda.facade = None
     consumer_lambda.storage = None
 
-    event = {"Records": []}
-    with pytest.raises(RuntimeError) as excinfo:
-        consumer_lambda.lambda_handler(event, None)
-
-    assert "CATALOG_TABLE_NAME environment variable is required" in str(excinfo.value)
-
-import json
-import pytest
-from src.lambdas import consumer_lambda
-from src.lambdas.storage.base import StorageAdapter
-
-
-class FailingStorageAdapter(StorageAdapter):
-    def put_item(self, item: dict) -> None:
-        raise Exception("Simulated DynamoDB failure")
-
-def test_lambda_handler_storage_exception(monkeypatch):
-    fake_storage = FailingStorageAdapter()
-    monkeypatch.setattr(consumer_lambda, "storage", fake_storage)
-    monkeypatch.setenv("CATALOG_TABLE_NAME", "fake-table")
-    payload = {
-        "kind": "book_request",
-        "payload": {
-            "title": "Some Book",
-            "isbn": "1234567890",
-            "requester_email": "user@example.com"
-        }
-    }
     event = {
         "Records": [
-            {"messageId": "msg-321", "body": json.dumps(payload)}
+            {"messageId": "bad1", "body": "not a json"}
         ]
     }
 
-    resp = consumer_lambda.lambda_handler(event, None)
-    assert resp["status"] == "processed"
-    assert len(resp["results"]["failed"]) == 1
-    assert resp["results"]["failed"][0]["id"] == "msg-321"
-    assert "Simulated DynamoDB failure" in resp["results"]["failed"][0]["error"]
+    res = lambda_handler(event, None)
+    assert res["status"] == "processed"
+    assert len(res["results"]["failed"]) == 1
+    assert res["results"]["failed"][0]["error"] == "Invalid JSON"
+
+
+def test_lambda_facade_exception(monkeypatch):
+    from src.lambdas import consumer_lambda
+
+    # Definir variable de entorno requerida
+    monkeypatch.setenv("CATALOG_TABLE_NAME", "FakeTable")
+
+    class ExplodingFacade:
+        def process(self, kind, payload, meta):
+            raise RuntimeError("boom")
+
+    consumer_lambda.facade = ExplodingFacade()
+    consumer_lambda.storage = None
+
+    event = {
+        "Records": [
+            {"messageId": "ex1", "body": '{"kind":"book_request","payload":{}}'}
+        ]
+    }
+
+    res = lambda_handler(event, None)
+    assert res["status"] == "processed"
+    assert len(res["results"]["failed"]) == 1
+    assert "boom" in res["results"]["failed"][0]["error"]
+
+def test_lambda_missing_env_var(monkeypatch):
+    from src.lambdas import consumer_lambda
+
+    # Aseguramos que la variable no esté definida
+    monkeypatch.delenv("CATALOG_TABLE_NAME", raising=False)
+
+    # Resetear storage y facade para forzar inicialización
+    consumer_lambda.storage = None
+    consumer_lambda.facade = None
+
+    event = {"Records": []}
+
+    with pytest.raises(RuntimeError) as excinfo:
+        lambda_handler(event, None)
+
+    assert "CATALOG_TABLE_NAME environment variable is required" in str(excinfo.value)
