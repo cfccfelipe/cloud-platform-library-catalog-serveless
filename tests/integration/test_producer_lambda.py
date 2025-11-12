@@ -1,9 +1,9 @@
 # tests/integration/test_producer_lambda.py
 import json
-import os
 import pytest
 from src.lambdas import producer_lambda
 from src.lambdas.validation.factory import ValidatorFactory
+
 
 class FakeSQS:
     """Fake SQS client to capture messages instead of sending to AWS."""
@@ -13,6 +13,7 @@ class FakeSQS:
     def send_message(self, **kwargs):
         self.sent_messages.append(kwargs)
         return {"MessageId": "msg-123"}
+
 
 def test_lambda_success(monkeypatch):
     # Patch SQS client
@@ -39,7 +40,6 @@ def test_lambda_success(monkeypatch):
 
     # Validate message body
     body = json.loads(fake_sqs.sent_messages[0]["MessageBody"])
-
     validator = ValidatorFactory.get_validator("book_request")
     assert validator is not None   # ✅ asegura que no sea None
 
@@ -66,9 +66,10 @@ def test_lambda_invalid_payload(monkeypatch):
         })
     }
 
-    resp = producer_lambda.handler(event, context=None)
+    resp = producer_lambda.handler(event, None)
     assert resp["statusCode"] == 400
     assert len(fake_sqs.sent_messages) == 0
+
 
 def test_lambda_unknown_kind(monkeypatch):
     fake_sqs = FakeSQS()
@@ -90,6 +91,7 @@ def test_lambda_unknown_kind(monkeypatch):
     assert resp["statusCode"] == 400
     assert "Unsupported kind" in resp["body"]
     assert len(fake_sqs.sent_messages) == 0
+
 
 def test_lambda_invalid_json(monkeypatch):
     fake_sqs = FakeSQS()
