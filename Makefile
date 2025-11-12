@@ -13,7 +13,7 @@ LAMBDA_SRC_DIR = src/lambdas
 SCRIPTS_DIR = scripts
 
 # Nombre del archivo ZIP de la aplicación para AWS
-APP_ZIP_NAME = build/app_deployment.zip
+APP_ZIP_NAME = src/lambda/build/app_deployment.zip
 TERRAFORM_PLAN_FILE = tfplan.out
 
 .PHONY: all setup infra deploy clean test zip check ci-test infra-init infra-plan infra-apply infra-destroy
@@ -47,7 +47,7 @@ infra-validate: infra-init
 	@echo "--- ✅ Validating Terraform configuration ---"
 	cd $(TERRAFORM_DIR) && terraform validate
 
-infra-plan: infra-validate
+infra-plan: zip infra-validate
 	@echo "--- 📝 Generating Terraform plan ---"
 	cd $(TERRAFORM_DIR) && terraform plan -var-file=terraform.tfvars -out=$(TERRAFORM_PLAN_FILE)
 
@@ -55,7 +55,7 @@ infra-apply: infra-plan
 	@echo "--- 🚀 Applying Infrastructure changes to AWS ---"
 	cd $(TERRAFORM_DIR) && terraform apply $(TERRAFORM_PLAN_FILE)
 
-apply: zip infra-apply
+apply: infra-apply
 	@echo "--- ✅ Infrastructure applied with packaged Lambda ZIP ---"
 
 infra-destroy:
@@ -73,14 +73,26 @@ infra-destroy:
 
 zip:
 	@echo "--- 📦 Packaging Lambda source code and dependencies ---"
-	poetry export --without dev -f requirements.txt --output $(SCRIPTS_DIR)/requirements.txt
-	chmod +x ./$(SCRIPTS_DIR)/package_lambda.sh
-	@echo "Ensuring build directory exists..."
 	mkdir -p infra/terraform/build
-	@echo "Running packaging script to include dependencies in the ZIP..."
-	./$(SCRIPTS_DIR)/package_lambda.sh $(LAMBDA_SRC_DIR) infra/terraform/build/producer_lambda.zip $(SCRIPTS_DIR)/requirements.txt
+	mkdir -p infra/terraform/package
+
+    # Export requirements desde Poetry
+	poetry export --without-hashes --without dev -f requirements.txt --output $(SCRIPTS_DIR)/requirements.txt
+
+    # Instalar dependencias en carpeta package (compatibles con Lambda Python 3.12)
+	pip3.12 install --upgrade -r $(SCRIPTS_DIR)/requirements.txt --target infra/terraform/package
+
+    # Copiar toda la carpeta src (mantiene imports absolutos)
+	cp -r src infra/terraform/package/
+
+    # Crear el zip final
+	cd infra/terraform/package && zip -r ../build/producer_lambda.zip .
+
+    # Limpiar temporales
+	rm -rf infra/terraform/package
 	rm -f $(SCRIPTS_DIR)/requirements.txt
-	@echo "Packaging complete: infra/terraform/build/producer_lambda.zip created and temporary files cleaned up."
+
+	@echo "✅ Packaging complete: infra/terraform/build/producer_lambda.zip listo con dependencias incluidas."
 
 
 deploy: zip infra-apply

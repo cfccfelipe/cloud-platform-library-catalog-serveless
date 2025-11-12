@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 
-from .base import PayloadValidator
+from src.lambdas.validation.base import PayloadValidator
 
 
 class BookRequestPayload(BaseModel):

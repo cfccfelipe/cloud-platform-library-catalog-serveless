@@ -1,8 +1,8 @@
 # src/lambdas/validation/factory.py
 from typing import ClassVar
 
-from .base import PayloadValidator
-from .book_validator import BookRequestValidator
+from src.lambdas.validation.base import PayloadValidator
+from src.lambdas.validation.book_validator import BookRequestValidator
 
 
 class ValidatorFactory:

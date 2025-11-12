@@ -1,6 +1,6 @@
 provider "aws" {
   region  = var.aws_region
-  profile = var.aws_profile   # optional: allows using AWS_PROFILE without hardcoding credentials
+  profile = var.aws_profile
 }
 
 # S3 bucket for remote Terraform state
@@ -54,10 +54,11 @@ module "consumer_lambda_iam" {
 
 # IAM Role + Policy for the producer Lambda (send-only)
 module "producer_lambda_iam" {
-  source             = "../../modules/iam"
-  lambda_role_name   = "producer-lambda-role-${var.environment}"
-  sqs_main_queue_arn = module.sqs.main_queue_arn
-  environment        = var.environment
+  source              = "../../modules/iam"
+  lambda_role_name    = "producer-lambda-role-${var.environment}"
+  sqs_main_queue_arn  = module.sqs.main_queue_arn
+  environment         = var.environment
+  enable_sqs_producer = true
 }
 
 # Producer Lambda function
@@ -68,10 +69,26 @@ module "producer_lambda" {
   lambda_function_name = "${var.environment}-library-fn-producer"
   lambda_role_arn      = module.producer_lambda_iam.lambda_role_arn
   filename             = var.producer_lambda_package
-  handler              = "producer_lambda.lambda_handler"
-  runtime              = "python3.9"
+  handler              = "src.lambdas.producer_lambda.lambda_handler"
+  runtime              = "python3.12"
 
   environment_variables = {
     SQS_QUEUE_URL = module.sqs.main_queue_url
   }
+}
+
+module "apigw_cloudwatch_iam" {
+  source      = "../../modules/apigw_cloudwatch_iam"
+  environment = var.environment
+}
+
+module "api_gateway" {
+  source               = "../../modules/api_gateway"
+  project_name         = "library-catalog"
+  environment          = var.environment
+  aws_region           = var.aws_region
+  producer_lambda_arn  = module.producer_lambda.lambda_function_arn
+  producer_lambda_name = module.producer_lambda.lambda_function_name
+
+  apigw_cloudwatch_role_arn = module.apigw_cloudwatch_iam.apigw_cloudwatch_role_arn
 }
