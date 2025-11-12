@@ -8,7 +8,7 @@ from src.lambdas.validation.factory import ValidatorFactory
 
 class EnrichmentFacade:
     """
-    Facade to orchestrate validation, enrichment, and persistence of SQS message payloads.
+    Facade to validation, enrichment, and persistence of SQS message payloads.
 
     Responsibilities:
     - Retrieve the appropriate validator for the given kind.
@@ -51,9 +51,7 @@ class EnrichmentFacade:
             try:
                 print(f"[Facade] Applying enricher: {enricher.__name__}")
                 data = enricher(data)
-                print(
-                    f"[Facade] Payload after enricher '{enricher.__name__}': {json.dumps(data)}"
-                )
+                print(f"[Facade] Payload '{enricher.__name__}': {json.dumps(data)}")
             except Exception as e:
                 print(f"[Facade] Enrichment failed: {e!s}")
                 return {"ok": False, "error": f"Enrichment failed: {e!s}", **meta}
