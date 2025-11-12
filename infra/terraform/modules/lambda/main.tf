@@ -17,3 +17,11 @@ resource "aws_lambda_function" "lambda" {
     Name        = var.lambda_function_name
   }
 }
+
+resource "aws_lambda_event_source_mapping" "sqs_consumer" {
+  event_source_arn        = var.sqs_main_queue_arn
+  function_name           = aws_lambda_function.lambda.arn
+  batch_size              = 10
+  maximum_retry_attempts  = 3
+  enabled                 = true
+}

@@ -14,6 +14,8 @@ catalog_table_name = "library-catalog-requests-qa"
 main_queue_name = "book-requests-queue"
 dlq_name        = "book-requests-dlq"
 enable_sqs_producer = true
+enable_sqs_consumer = true
+enable_logs = true
 
 # Lambda Producer
 producer_lambda_function_name = "qa-library-fn-producer"
